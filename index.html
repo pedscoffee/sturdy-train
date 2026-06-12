@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pediatric A&P Builder</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f8;
+            --surface-color: #ffffff;
+            --border-color: #e2e8f0;
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
+            --success-color: #10b981;
+            --radius: 8px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .header-title { font-size: 1.25rem; font-weight: 600; }
+        
+        .security-badge {
+            background-color: #fef2f2;
+            color: #b91c1c;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid #fca5a5;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Layout */
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr;
+            gap: 16px;
+            padding: 16px;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        @media (max-width: 1024px) {
+            .workspace { grid-template-columns: 1fr 1fr; }
+            .preview-pane { grid-column: span 2; }
+        }
+        @media (max-width: 768px) {
+            .workspace { grid-template-columns: 1fr; overflow-y: auto; display: flex; flex-direction: column; }
+            .pane { min-height: 500px; }
+        }
+
+        .pane {
+            background-color: var(--surface-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pane-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: #f8fafc;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pane-content {
+            padding: 16px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        /* Library Styles */
+        .search-bar { width: 100%; padding: 10px; margin-bottom: 16px; border: 1px solid var(--border-color); border-radius: var(--radius); font-size: 1rem; }
+        .category-group { margin-bottom: 16px; }
+        .category-title { font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; letter-spacing: 0.5px; }
+        .problem-btn {
+            display: block; width: 100%; text-align: left; background: var(--surface-color);
+            border: 1px solid var(--border-color); padding: 12px; margin-bottom: 8px;
+            border-radius: var(--radius); cursor: pointer; transition: all 0.2s;
+            font-size: 0.95rem; font-weight: 500;
+        }
+        .problem-btn:hover { border-color: var(--primary-color); background-color: #eff6ff; }
+        .problem-btn:active { transform: scale(0.98); }
+
+        /* Editor Styles */
+        .active-problems-list { border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 16px; }
+        .active-problem-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px; border: 1px solid var(--border-color); border-radius: var(--radius);
+            margin-bottom: 8px; cursor: pointer; background: #fff;
+        }
+        .active-problem-item.selected { border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
+        .active-problem-actions button { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; }
+        .active-problem-actions button:hover { color: var(--danger-color); }
+        
+        .field-group { margin-bottom: 16px; }
+        .field-label { display: block; font-weight: 500; margin-bottom: 6px; font-size: 0.9rem; }
+        .field-select, .field-text {
+            width: 100%; padding: 10px; border: 1px solid var(--border-color);
+            border-radius: var(--radius); font-size: 0.95rem;
+        }
+        .field-toggle-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem; padding: 6px 0; }
+        .field-toggle-label input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+
+        /* Preview Styles */
+        .toggle-group { display: flex; gap: 8px; background: #f1f5f9; padding: 4px; border-radius: var(--radius); margin-bottom: 16px; }
+        .toggle-btn { flex: 1; padding: 6px 12px; border: none; background: transparent; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 0.9rem; }
+        .toggle-btn.active { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        
+        .output-area {
+            background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius);
+            padding: 16px; min-height: 200px; white-space: pre-wrap; font-family: monospace; font-size: 0.9rem;
+            line-height: 1.5; margin-bottom: 16px;
+        }
+        
+        .action-row { display: flex; gap: 12px; }
+        .btn {
+            padding: 10px 16px; border: none; border-radius: var(--radius); font-weight: 600;
+            font-size: 0.95rem; cursor: pointer; flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-danger { background-color: white; color: var(--danger-color); border: 1px solid var(--danger-color); }
+        .btn-danger:hover { background-color: #fef2f2; }
+
+        .empty-state { text-align: center; color: var(--text-muted); padding: 40px 20px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">Pediatric A&P Builder</div>
+        <div class="security-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            Ephemeral Session: No patient data retained
+        </div>
+    </header>
+
+    <div class="workspace">
+        <!-- Pane 1: Library -->
+        <div class="pane">
+            <div class="pane-header">Problem Library</div>
+            <div class="pane-content">
+                <input type="text" id="searchInput" class="search-bar" placeholder="Search diagnoses...">
+                <div id="libraryContainer"></div>
+            </div>
+        </div>
+
+        <!-- Pane 2: Editor -->
+        <div class="pane">
+            <div class="pane-header">Active Problems & Details</div>
+            <div class="pane-content" style="display: flex; flex-direction: column;">
+                <div id="activeProblemsContainer" class="active-problems-list"></div>
+                <div id="editorContainer" style="flex-grow: 1;"></div>
+            </div>
+        </div>
+
+        <!-- Pane 3: Preview -->
+        <div class="pane preview-pane">
+            <div class="pane-header">Live A&P Preview</div>
+            <div class="pane-content" style="display: flex; flex-direction: column;">
+                <div class="toggle-group">
+                    <button class="toggle-btn active" id="btnStyleNarrative" onclick="setOutputStyle('narrative')">Narrative</button>
+                    <button class="toggle-btn" id="btnStyleBulleted" onclick="setOutputStyle('bulleted')">Bulleted</button>
+                </div>
+                <div id="outputArea" class="output-area"></div>
+                <div class="action-row">
+                    <button class="btn btn-primary" onclick="copyOutput()" id="copyBtn">Copy A&P</button>
+                    <button class="btn btn-danger" onclick="clearSession()">Clear Session</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================
+           ARCHITECTURE & STATE
+           ========================================== */
+        
+        let appState = {
+            activeProblems: [],
+            selectedInstanceId: null,
+            outputStyle: 'narrative',
+            nextInstanceId: 1
+        };
+
+        /* ==========================================
+           TEMPLATES DATA MODEL
+           ========================================== */
+
+        const diagnosisTemplates = [
+            {
+                id: 'aom', title: 'Acute Otitis Media', category: 'Acute infections',
+                fields: [
+                    { key: 'laterality', label: 'Laterality', type: 'select', options: ['Right', 'Left', 'Bilateral'], defaultValue: 'Right' },
+                    { key: 'severity', label: 'Severity/Symptoms', type: 'select', options: ['Mild/Moderate', 'Severe (Fever >= 39C or severe pain)', 'Non-severe'], defaultValue: 'Mild/Moderate' },
+                    { key: 'abx', label: 'Antibiotic Plan', type: 'select', options: ['Amoxicillin (High dose, 90mg/kg/day)', 'Amoxicillin-Clavulanate', 'Cefdinir', 'Observation / Pain control only'], defaultValue: 'Amoxicillin (High dose, 90mg/kg/day)' },
+                    { key: 'duration', label: 'Duration', type: 'select', options: ['10 days', '7 days', '5 days', 'N/A (Obs)'], defaultValue: '10 days' },
+                    { key: 'pain', label: 'Advise ibuprofen/acetaminophen for pain', type: 'boolean', defaultValue: true },
+                    { key: 'notes', label: 'Custom Note', type: 'text', defaultValue: '' }
+                ]
+            },
+            {
+                id: 'uri', title: 'Viral Upper Respiratory Infection', category: 'Respiratory',
+                fields: [
+                    { key: 'symptoms', label: 'Primary Symptoms', type: 'select', options: ['Congestion and rhinorrhea', 'Cough and congestion', 'Sore throat and congestion'], defaultValue: 'Congestion and rhinorrhea' },
+                    { key: 'suction', label: 'Advise nasal saline and suctioning', type: 'boolean', defaultValue: true },
+                    { key: 'honey', label: 'Advise honey for cough (>1yo)', type: 'boolean', defaultValue: false },
+                    { key: 'er', label: 'Return precautions discussed (WOB, poor PO, persistent fever)', type: 'boolean', defaultValue: true },
+                    { key: 'notes', label: 'Custom Note', type: 'text', defaultValue: '' }
+                ]
+            },
+            {
+                id: 'strep', title: 'Strep Pharyngitis', category: 'Acute infections',
+                fields: [
+                    { key: 'test', label: 'Testing', type: 'select', options: ['Rapid Strep Positive', 'Culture Pending, Empiric Treatment', 'Clinical diagnosis'], defaultValue: 'Rapid Strep Positive' },
+                    { key: 'abx', label: 'Antibiotic', type: 'select', options: ['Amoxicillin (50mg/kg/day)', 'Penicillin VK', 'Cephalexin', 'Azithromycin'], defaultValue: 'Amoxicillin (50mg/kg/day)' },
+                    { key: 'duration', label: 'Duration', type: 'select', options: ['10 days', '5 days (Azithro)'], defaultValue: '10 days' },
+                    { key: 'school', label: 'Return to school note provided (after 24h abx/afebrile)', type: 'boolean', defaultValue: true },
+                    { key: 'notes', label: 'Custom Note', type: 'text', defaultValue: '' }
+                ]
+            },
+            {
+                id: 'bronch', title: 'Bronchiolitis', category: 'Respiratory',
+                fields: [
+                    { key: 'severity', label: 'Clinical Severity', type: 'select', options: ['Mild, maintaining oxygenation', 'Moderate, borderline oral intake', 'Severe (needs admit)'], defaultValue: 'Mild, maintaining oxygenation' },
+                    { key: 'hydration', label: 'Hydration counseling provided', type: 'boolean', defaultValue: true },
+                    { key: 'suction', label: 'Nasal saline and bulb suction before feeds', type: 'boolean', defaultValue: true },
+                    { key: 'fup', label: 'Follow-up timing', type: 'select', options: ['1-2 days', '3-5 days', 'PRN'], defaultValue: '1-2 days' },
+                    { key: 'notes', label: 'Custom Note', type: 'text', defaultValue: '' }
+                ]
+            },
+            {
+                id: 'gastro', title: 'Acute Gastroenteritis', category: 'GI',
+                fields: [
+                    { key: 'status', label: 'Hydration Status', type: 'select', options: ['Well hydrated', 'Mild dehydration', 'Moderate dehydration'], defaultValue: 'Well hydrated' },
+                    { key: 'zofran', label: 'Prescribed Ondansetron (Zofran)', type: 'boolean', defaultValue: false },
+                    { key: 'ors', label: 'Advised Oral Rehydration Solution (Pedialyte) frequent small sips', type: 'boolean', defaultValue: true },
+                    { key: 'diet', label: 'Advised early refeeding / regular diet as tolerated', type: 'boolean', defaultValue: true },
+                    { key: 'notes', label: 'Custom Note', type: 'text', defaultValue: '' }
+                ]
+            },
+            {
+                id: 'constipation', title: 'Constipation', category: 'GI',
+                fields: [
+                    { key: 'type', label: 'Phase', type: 'select', options: ['Maintenance phase', 'Active impaction/Cleanout needed'], defaultValue: 'Maintenance phase' },
+                    { key: 'med', label: 'Medication Plan', type: 'select', options: ['Polyethylene glycol (Miralax) daily', 'Lactulose', 'Senna/Stimulant', 'Dietary changes only'], defaultValue: 'Polyethylene glycol (Miralax) daily' },
+                    { key: 'diet', label: 'Counseling: Increase water and dietary fiber', type: 'boolean', defaultValue: true },
+                    { key: 'toilet', label: 'Counseling: Scheduled toilet sitting 5-10 mins post-meals', type: 'boolean', defaultValue: true },
+                    { key: 'notes', label: 'Custom Note', type: 'text', defaultValue: '' }
+                ]
+            },
+            {
+                id: 'eczema', title: 'Atopic Dermatitis', category: 'Skin',
+                fields: [
+                    { key: 'flare', label: 'Current Status', type: 'select', options: ['Active flare', 'Maintenance / Mild', 'Severe/Infected'], defaultValue: 'Active flare' },
+                    { key: 'steroid', label: 'Topical Steroid', type: 'select', options: ['Hydrocortisone 1% (face/folds)', 'Triamcinolone 0.1% (body)', 'None / Emollients only'], defaultValue: 'Hydrocortisone 1% (face/folds)' },
+                    { key: 'emollient', label: 'Advised thick emollients (ointment/cream) BID minimum', type: 'boolean', defaultValue: true },
+                    { key: 'bath', label: 'Advised short, lukewarm baths and "soak and seal"', type: 'boolean', defaultValue: true },
+                    { key: 'notes', label: 'Custom Note', type: 'text', defaultValue: '' }
+                ]
+            },
+            {
+                id: 'asthma', title: 'Mild Asthma Exacerbation', category: 'Respiratory',
+                fields: [
+                    { key: 'trigger', label: 'Suspected Trigger', type: 'select', options: ['Viral URI', 'Allergens', 'Exercise', 'Unknown'], defaultValue: 'Viral URI' },
+                    { key: 'albuterol', label: 'Albuterol Plan', type: 'select', options: ['Q4 hours PRN', 'Q4-6 hours PRN', '2 puffs Q4 hours then taper'], defaultValue: 'Q4 hours PRN' },
+                    { key: 'steroid', label: 'Oral Corticosteroid prescribed (Dex/Pred)', type: 'boolean', defaultValue: false },
+                    { key: 'actionplan', label: 'Asthma Action Plan reviewed/updated', type: 'boolean', defaultValue: true },
+                    { key: 'notes', label: 'Custom Note', type: 'text', defaultValue: '' }
+                ]
+            }
+        ];
+
+        /* ==========================================
+           CORE LOGIC
+           ========================================== */
+
+        function getTemplate(id) { return diagnosisTemplates.find(t => t.id === id); }
+        function getActiveProblem(instanceId) { return appState.activeProblems.find(p => p.instanceId === instanceId); }
+
+        function addProblem(templateId) {
+            const template = getTemplate(templateId);
+            const initialValues = {};
+            template.fields.forEach(f => { initialValues[f.key] = f.defaultValue; });
+
+            const newProblem = {
+                instanceId: appState.nextInstanceId++,
+                templateId: templateId,
+                title: template.title,
+                values: initialValues
+            };
+
+            appState.activeProblems.push(newProblem);
+            appState.selectedInstanceId = newProblem.instanceId;
+            document.getElementById('searchInput').value = '';
+            renderAll();
+        }
+
+        function removeProblem(instanceId, event) {
+            if (event) event.stopPropagation();
+            appState.activeProblems = appState.activeProblems.filter(p => p.instanceId !== instanceId);
+            if (appState.selectedInstanceId === instanceId) {
+                appState.selectedInstanceId = appState.activeProblems.length > 0 ? appState.activeProblems[0].instanceId : null;
+            }
+            renderAll();
+        }
+
+        function selectProblem(instanceId) {
+            appState.selectedInstanceId = instanceId;
+            renderAll();
+        }
+
+        function updateFieldValue(instanceId, key, value) {
+            const problem = getActiveProblem(instanceId);
+            if (problem) {
+                problem.values[key] = value;
+                renderPreview();
+            }
+        }
+
+        function setOutputStyle(style) {
+            appState.outputStyle = style;
+            document.getElementById('btnStyleNarrative').classList.toggle('active', style === 'narrative');
+            document.getElementById('btnStyleBulleted').classList.toggle('active', style === 'bulleted');
+            renderPreview();
+        }
+
+        function clearSession() {
+            if (appState.activeProblems.length === 0) return;
+            if (confirm("Clear current session? Ensure you have copied your Assessment & Plan. All data will be wiped.")) {
+                appState.activeProblems = [];
+                appState.selectedInstanceId = null;
+                renderAll();
+            }
+        }
+
+        function copyOutput() {
+            const outputText = document.getElementById('outputArea').innerText;
+            if (!outputText.trim() || appState.activeProblems.length === 0) {
+                alert("Nothing to copy. Add problems first.");
+                return;
+            }
+            navigator.clipboard.writeText(outputText).then(() => {
+                const btn = document.getElementById('copyBtn');
+                const origText = btn.innerText;
+                btn.innerText = "Copied!";
+                btn.style.backgroundColor = "var(--success-color)";
+                setTimeout(() => {
+                    btn.innerText = origText;
+                    btn.style.backgroundColor = "var(--primary-color)";
+                }, 2000);
+            });
+        }
+
+        /* ==========================================
+           TEXT GENERATION
+           ========================================== */
+
+        function generateAP() {
+            if (appState.activeProblems.length === 0) return "No active problems.";
+
+            let output = "";
+            appState.activeProblems.forEach((prob, index) => {
+                const num = index + 1;
+                output += `${num}. ${prob.title}\n`;
+                
+                if (appState.outputStyle === 'narrative') {
+                    output += generateNarrative(prob) + "\n\n";
+                } else {
+                    output += generateBulleted(prob) + "\n\n";
+                }
+            });
+            return output.trim();
+        }
+
+        function generateNarrative(prob) {
+            const t = getTemplate(prob.templateId);
+            let text = "Assessment: ";
+            let planText = "Plan: ";
+            
+            // Heuristics for natural language assembly based on generic fields
+            let selectValues = [];
+            let truthyBooleans = [];
+            let customNote = "";
+
+            t.fields.forEach(f => {
+                const val = prob.values[f.key];
+                if (f.key === 'notes' && val) customNote = val;
+                else if (f.type === 'select') selectValues.push(val);
+                else if (f.type === 'boolean' && val) truthyBooleans.push(f.label);
+            });
+
+            text += selectValues.join(', ') + ". ";
+            
+            if (truthyBooleans.length > 0) {
+                planText += truthyBooleans.join('. ') + ". ";
+            } else {
+                planText += "Continue current management. ";
+            }
+
+            if (customNote) planText += customNote;
+
+            return text + "\n" + planText.trim();
+        }
+
+        function generateBulleted(prob) {
+            const t = getTemplate(prob.templateId);
+            let out = "";
+            
+            t.fields.forEach(f => {
+                const val = prob.values[f.key];
+                if (f.key === 'notes') {
+                    if (val) out += `- Notes: ${val}\n`;
+                } else if (f.type === 'boolean') {
+                    if (val) out += `- ${f.label}\n`;
+                } else if (f.type === 'select') {
+                    out += `- ${f.label}: ${val}\n`;
+                }
+            });
+            return out.trim();
+        }
+
+        /* ==========================================
+           DOM RENDERING
+           ========================================== */
+
+        function renderLibrary(filter = '') {
+            const container = document.getElementById('libraryContainer');
+            container.innerHTML = '';
+            
+            const categories = {};
+            diagnosisTemplates.forEach(t => {
+                if (t.title.toLowerCase().includes(filter.toLowerCase())) {
+                    if (!categories[t.category]) categories[t.category] = [];
+                    categories[t.category].push(t);
+                }
+            });
+
+            for (const [catName, problems] of Object.entries(categories)) {
+                const group = document.createElement('div');
+                group.className = 'category-group';
+                group.innerHTML = `<div class="category-title">${catName}</div>`;
+                
+                problems.forEach(p => {
+                    const btn = document.createElement('button');
+                    btn.className = 'problem-btn';
+                    btn.innerText = `+ ${p.title}`;
+                    btn.onclick = () => addProblem(p.id);
+                    group.appendChild(btn);
+                });
+                container.appendChild(group);
+            }
+        }
+
+        function renderEditor() {
+            const listContainer = document.getElementById('activeProblemsContainer');
+            const editorContainer = document.getElementById('editorContainer');
+            
+            listContainer.innerHTML = '';
+            editorContainer.innerHTML = '';
+
+            if (appState.activeProblems.length === 0) {
+                listContainer.innerHTML = '<div class="empty-state">No active problems. Add from the library.</div>';
+                return;
+            }
+
+            // Render List
+            appState.activeProblems.forEach(prob => {
+                const div = document.createElement('div');
+                div.className = `active-problem-item ${prob.instanceId === appState.selectedInstanceId ? 'selected' : ''}`;
+                div.onclick = () => selectProblem(prob.instanceId);
+                div.innerHTML = `
+                    <div style="font-weight: 500;">${prob.title}</div>
+                    <div class="active-problem-actions">
+                        <button onclick="removeProblem(${prob.instanceId}, event)" title="Remove">✕</button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+
+            // Render Detail Editor
+            const activeProb = getActiveProblem(appState.selectedInstanceId);
+            if (!activeProb) return;
+
+            const template = getTemplate(activeProb.templateId);
+            const form = document.createElement('div');
+
+            template.fields.forEach(field => {
+                const fg = document.createElement('div');
+                fg.className = 'field-group';
+                
+                if (field.type === 'select') {
+                    fg.innerHTML = `<label class="field-label">${field.label}</label>`;
+                    const sel = document.createElement('select');
+                    sel.className = 'field-select';
+                    field.options.forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt;
+                        option.innerText = opt;
+                        if (activeProb.values[field.key] === opt) option.selected = true;
+                        sel.appendChild(option);
+                    });
+                    sel.onchange = (e) => updateFieldValue(activeProb.instanceId, field.key, e.target.value);
+                    fg.appendChild(sel);
+                } 
+                else if (field.type === 'boolean') {
+                    const label = document.createElement('label');
+                    label.className = 'field-toggle-label';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.checked = activeProb.values[field.key];
+                    cb.onchange = (e) => updateFieldValue(activeProb.instanceId, field.key, e.target.checked);
+                    
+                    label.appendChild(cb);
+                    label.appendChild(document.createTextNode(field.label));
+                    fg.appendChild(label);
+                }
+                else if (field.type === 'text') {
+                    fg.innerHTML = `<label class="field-label">${field.label}</label>`;
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'field-text';
+                    input.value = activeProb.values[field.key] || '';
+                    input.placeholder = "Optional free text...";
+                    input.oninput = (e) => updateFieldValue(activeProb.instanceId, field.key, e.target.value);
+                    fg.appendChild(input);
+                }
+                
+                form.appendChild(fg);
+            });
+
+            editorContainer.appendChild(form);
+        }
+
+        function renderPreview() {
+            const outArea = document.getElementById('outputArea');
+            if (appState.activeProblems.length === 0) {
+                outArea.innerHTML = '<span style="color: #94a3b8; font-style: italic;">Your generated Assessment & Plan will appear here...</span>';
+            } else {
+                outArea.innerText = generateAP();
+            }
+        }
+
+        function renderAll() {
+            renderLibrary(document.getElementById('searchInput').value);
+            renderEditor();
+            renderPreview();
+        }
+
+        // Init bindings
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            renderLibrary(e.target.value);
+        });
+
+        // First render
+        renderAll();
+
+    </script>
+</body>
+</html>
